@@ -8,7 +8,10 @@ const handleIcons = (scrollVal) => {
     let maxScrollableWidth = tabsBox.scrollWidth - tabsBox.clientWidth;
     arrowIcons[0].parentElement.style.display = scrollVal <= 0 ? "none" : "flex";
     arrowIcons[1].parentElement.style.display = maxScrollableWidth - scrollVal <= 1 ? "none" : "flex";
-}
+};
+
+// Initialize scroll position handling
+handleIcons(tabsBox.scrollLeft);
 
 arrowIcons.forEach(icon => {
     icon.addEventListener("click", () => {
@@ -29,8 +32,8 @@ allTabs.forEach(tab => {
 async function fetchData(query) {
     try {
         const response = await fetch(`${url}${query}&apiKey=${key}`);
+        if (!response.ok) throw new Error(`Error: ${response.statusText}`);
         const data = await response.json();
-        console.log(data);
         fillData(data.articles);
     } catch (error) {
         console.error(error);
@@ -41,7 +44,7 @@ function fillData(allData) {
     let container = document.getElementById('main');
     container.innerHTML = "";
     allData.forEach((data) => {
-        if (!data.urlToImage) return; 
+        if (!data.urlToImage) return;
         let card = document.createElement('div');
         card.classList.add('card');
         card.innerHTML = `
