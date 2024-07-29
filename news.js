@@ -31,12 +31,15 @@ allTabs.forEach(tab => {
 
 async function fetchData(query) {
     try {
+        console.log(`Fetching data for query: ${query}`);
         const response = await fetch(`${url}${query}&apiKey=${key}`);
+        console.log(`Response status: ${response.status}`);
         if (!response.ok) throw new Error(`Error: ${response.statusText}`);
         const data = await response.json();
+        console.log(data);
         fillData(data.articles);
     } catch (error) {
-        console.error(error);
+        console.error('Fetch error:', error);
     }
 }
 
