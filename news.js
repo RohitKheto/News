@@ -1,17 +1,14 @@
 const tabsBox = document.querySelector(".tabBar"),
     allTabs = tabsBox.querySelectorAll(".tab"),
     arrowIcons = document.querySelectorAll(".icon i");
-const key = '6c37f50dbe8d4a019b7f8727215bcad4';
-const url = 'https://newsapi.org/v2/everything?q=';
+const key = 'd5d552d001f646db866b00b801d278c3';
+const baseUrl = 'https://api.worldnewsapi.com/search-news?language=en';
 
 const handleIcons = (scrollVal) => {
     let maxScrollableWidth = tabsBox.scrollWidth - tabsBox.clientWidth;
     arrowIcons[0].parentElement.style.display = scrollVal <= 0 ? "none" : "flex";
     arrowIcons[1].parentElement.style.display = maxScrollableWidth - scrollVal <= 1 ? "none" : "flex";
-};
-
-// Initialize scroll position handling
-handleIcons(tabsBox.scrollLeft);
+}
 
 arrowIcons.forEach(icon => {
     icon.addEventListener("click", () => {
@@ -29,17 +26,39 @@ allTabs.forEach(tab => {
     });
 });
 
-async function fetchData(query) {
+async function fetchData(query, retryCount = 0) {
+    const url = `${baseUrl}&text=${query}`;
+    const maxRetries = 5; // Set a maximum number of retries
+    const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+
     try {
-        console.log(`Fetching data for query: ${query}`);
-        const response = await fetch(`${url}${query}&apiKey=${key}`);
-        console.log(`Response status: ${response.status}`);
-        if (!response.ok) throw new Error(`Error: ${response.statusText}`);
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'x-api-key': key
+            }
+        });
+
+        if (response.status === 429) {
+            if (retryCount < maxRetries) {
+                console.log(`Rate limit exceeded. Retrying in ${retryDelay / 1000} seconds...`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                return fetchData(query, retryCount + 1);
+            } else {
+                throw new Error('Maximum retry limit reached');
+            }
+        }
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
         const data = await response.json();
         console.log(data);
-        fillData(data.articles);
+        fillData(data.news);
+
     } catch (error) {
-        console.error('Fetch error:', error);
+        console.error('There was a problem with the fetch operation:', error);
     }
 }
 
@@ -47,17 +66,17 @@ function fillData(allData) {
     let container = document.getElementById('main');
     container.innerHTML = "";
     allData.forEach((data) => {
-        if (!data.urlToImage) return;
+        if (!data.image) return;
         let card = document.createElement('div');
         card.classList.add('card');
         card.innerHTML = `
             <div class="card-image">
-                <img src="${data.urlToImage}" alt="">
+                <img src="${data.image}" alt="">
             </div>
             <div class="card-content">
                 <h3>${data.title}</h3>
-                <div class="source"><span>${data.source.name}</span> - ${new Date(data.publishedAt).toLocaleString()}</div>
-                <div class="description">${data.description}</div>
+                <div class="source"><span>${data.source_country}</span> - ${new Date(data.publish_date).toLocaleString()}</div>
+                <div class="description">${data.summary}</div>
                 <button class="read-button" onclick="openlink('${data.url}')">Read more</button>
             </div>
         `;
