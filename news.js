@@ -1,8 +1,8 @@
 const tabsBox = document.querySelector(".tabBar"),
     allTabs = tabsBox.querySelectorAll(".tab"),
     arrowIcons = document.querySelectorAll(".icon i");
-const key = 'd5d552d001f646db866b00b801d278c3';
-const baseUrl = 'https://api.worldnewsapi.com/search-news?language=en';
+const key = '6c37f50dbe8d4a019b7f8727215bcad4';
+const url = 'https://newsapi.org/v2/everything?q=';
 
 const handleIcons = (scrollVal) => {
     let maxScrollableWidth = tabsBox.scrollWidth - tabsBox.clientWidth;
@@ -26,39 +26,14 @@ allTabs.forEach(tab => {
     });
 });
 
-async function fetchData(query, retryCount = 0) {
-    const url = `${baseUrl}&text=${query}`;
-    const maxRetries = 5; // Set a maximum number of retries
-    const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff
-
+async function fetchData(query) {
     try {
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'x-api-key': key
-            }
-        });
-
-        if (response.status === 429) {
-            if (retryCount < maxRetries) {
-                console.log(`Rate limit exceeded. Retrying in ${retryDelay / 1000} seconds...`);
-                await new Promise(resolve => setTimeout(resolve, retryDelay));
-                return fetchData(query, retryCount + 1);
-            } else {
-                throw new Error('Maximum retry limit reached');
-            }
-        }
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
+        const response = await fetch(`${url}${query}&apiKey=${key}`);
         const data = await response.json();
         console.log(data);
-        fillData(data.news);
-
+        fillData(data.articles);
     } catch (error) {
-        console.error('There was a problem with the fetch operation:', error);
+        console.error(error);
     }
 }
 
@@ -66,17 +41,17 @@ function fillData(allData) {
     let container = document.getElementById('main');
     container.innerHTML = "";
     allData.forEach((data) => {
-        if (!data.image) return;
+        if (!data.urlToImage) return; 
         let card = document.createElement('div');
         card.classList.add('card');
         card.innerHTML = `
             <div class="card-image">
-                <img src="${data.image}" alt="">
+                <img src="${data.urlToImage}" alt="">
             </div>
             <div class="card-content">
                 <h3>${data.title}</h3>
-                <div class="source"><span>${data.source_country}</span> - ${new Date(data.publish_date).toLocaleString()}</div>
-                <div class="description">${data.summary}</div>
+                <div class="source"><span>${data.source.name}</span> - ${new Date(data.publishedAt).toLocaleString()}</div>
+                <div class="description">${data.description}</div>
                 <button class="read-button" onclick="openlink('${data.url}')">Read more</button>
             </div>
         `;
